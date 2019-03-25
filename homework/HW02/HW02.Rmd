@@ -1,0 +1,86 @@
+How strong is the linear relationship between the age of a driver and the distance the driver can see? If we had to guess, we might think that the relationship is negative ¡X as age increases, the distance decreases. A research firm collected data on a sample of n = 30 drivers (¡§age_distance.txt¡¨).
+
+#load data
+
+```{r}
+Age <- unlist(age_distance[1], use.names=FALSE)
+Distance <-unlist(age_distance[2], use.names=FALSE)
+```
+a.	Please draw stem-leaf plots for ¡§Age¡¨ and ¡§Distance¡¨ respectively. Comments on the two plots
+
+stem-leaf plots for ¡§Age¡¨
+```{r}
+stem(Age)
+```
+stem-leaf plots for ¡§Distance¡¨
+```{r}
+stem(Distance)
+```
+
+b.	Please draw a scatterplot of ¡§Age¡¨ (X ¶b) and ¡§Distance¡¨ (Y ¶b). Comments on the plot. Are there any outliers or influential observations?
+```{r}
+plot(Age,Distance,main="scatterplot of Age and Distance")
+
+```
+```{r}
+ggplot(age_distance,aes(x=Age,y=Distance))+
+  geom_point() #actual points 
+```
+
+c.	For each variable, compute the mean and standard deviation. Then compute the Pearson correlation coefficient. 
+```{r}
+cat("Age¡Gmean",mean(Age),"Sd",sd(Age))
+```
+```{r}
+cat("Distance¡Gmean",mean(Distance),"Sd",sd(Distance))
+```
+Pearson correlation coefficient
+```{r}
+cor(age_distance)
+```
+d.	Fit the following linear regression: 
+```{r}
+model <- lm(Distance ~ Age,data=age_distance)
+summary(model)
+```
+```{r}
+sigma(model)**2
+```
+
+```{r}
+model
+```
+
+e.	Draw the residual plot and comment on the plot.
+https://www.r-bloggers.com/visualising-residuals/
+
+```{r}
+plot(model)
+```
+```{r}
+age_distance$predicted <- predict(model)
+age_distance$residuals <- residuals(model)
+age_distance %>% select(Distance,predicted,residuals) %>% head()
+```
+
+```{r}
+ggplot(age_distance,aes(x=Age,y=Distance))+
+  geom_smooth(method = "lm", se = FALSE, color = "lightgrey") +  # Plot regression slope
+  geom_segment(aes(xend = Age, yend = predicted)) +
+  geom_point() + #actual points
+  geom_point(aes(y=predicted),shape=1) #predicted value
+```
+
+f.	Draw the normal probability plot. Commet on the plot. 
+https://www.surfacewalker.com/single-post/2017/03/22/R-language-%E5%B8%B8%E6%85%8BQ-Q%E5%9C%96normal-Q-Q-plot%E7%B0%A1%E4%BB%8B%E8%88%87%E7%B9%AA%E8%A3%BD
+```{r}
+curve(dnorm(x),from = -3.5, to = 3.5, ylab="p.d.f", main="normal distribution plot - n(0.1)")
+```
+
+g.	What is the value of R^2 ? What does this value mean? 
+```{r}
+r_sq <- summary(model)$r.squared
+adj_r_sq <- summary(model)$adj.r.squared
+cat(r_sq,adj_r_sq)
+```
+
