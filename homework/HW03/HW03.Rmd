@@ -1,0 +1,117 @@
+---
+title: "HW03"
+author: "Irene Lai"
+
+Data description
+- Data: pizza2.txt
+- description: Data about pizza
+- variables descriptions:
+  rating: Rating for the pizza
+  cost: Cost per slice
+  heat: Heat source used (Gas/Coal/Wood)
+  brick: The use of brick oven (TRUE/FALSE)
+  area: The location of pizzeria
+  heat_re: =heat (Coal 0/Wood 1/Gas 2)
+---
+
+1.Using coal to bake pizzas yields different ratings with those baked by using gas or wood??. We wish to verify this statement by providing some statistical evidences:
+
+a.Compute each of the average ratings of the pizzas baked by coal, wood and gas, along with the standard deviations of the ratings. Comment the results.
+```{r}
+#method1: mean(pizza2[pizza2["heat"]=="Coal","rating"])
+library(dplyr)
+group_by(pizza2,heat) %>%
+  summarise(rating_mean=mean(rating),rating_sd=sd(rating))
+```
+
+b.Perform an ANOVA test to find out if the ratings of the pizzas baked by different heat sources are equal in average. Comment the results.
+
+```{r}
+anova(lm(rating~heat,data=pizza2))
+```
+
+
+c.Fit a simple linear regression by using rating as the response variable and heat as the predictor variable. Interpret the estimated regression coefficients and the corresponding p-values.
+
+```{r}
+model_1c <- lm(rating~heat,data=pizza2)
+summary(model_1c)
+```
+
+
+d.Compare and contrast the results in 2a., 2b. and 2c.. In other words, what information are shown from both analyses, OR from one analysis, but not from the others?
+
+
+2.Fit two multiple linear regression by using rating as the response variable, and
+
+a.heat, area and cost as the predictor variables.
+b.heat_re, area and cost as the predictor variables.
+
+Assume that coal-baked pizzas produce the highest ratings, followed by using wood, and then gas, compare the two models. It is not reasonable to not use dummy(indicator) variables in model fitting (as in 2b.), why? Justify your answer by comparing the interpretations of the regression coefficients of heat and heat_re. 
+
+```{r}
+model_2a <- lm(rating ~ heat+area+cost,data=pizza2)
+summary(model_2a)
+```
+```{r}
+model_2b <- lm(rating ~ heat_re+area+cost,data=pizza2)
+summary(model_2b)
+```
+
+```{r}
+pizza2 <- pizza2 %>% mutate(heat_re_modified=case_when(heat_re==1~2,heat_re==2~1,heat_re==0~0))
+model_2 <- lm(rating~heat_re_modified+area+cost,data=pizza2)
+summary(model_2)
+```
+https://stackoverflow.com/questions/22337394/dplyr-mutate-with-conditional-values
+
+
+Then, predict the rating for a coal baked pizza that costs $2.50 per slice in LittleItaly and find the corresponding prediction interval using both of the models built in 3a. and 3b.. [hint: use predict()]
+
+```{r}
+new_data <- data.frame(cost=2.50,heat="Coal",brick=TRUE,area="LittleItaly",heat_re=0)
+predict(model_2a, new_data,interval="predict")
+```
+http://www.r-tutor.com/elementary-statistics/simple-linear-regression/prediction-interval-linear-regression
+```{r}
+predict(model_2b, new_data,interval="predict")
+```
+
+
+3.Construct the 95% t-based confidence intervals for the mean rating for each pizzeria location (area). Plot all of the intervals in a single plot and briefly comment the results. (Hint: you could make use of plot(), lines() and points() OR search online  for some ways to plot confidence intervals.)
+```{r}
+library(broom)
+group_by(pizza2,area) %>%
+  summarise(
+    rating_mean=mean(rating),
+    rating_sd=sd(rating),
+    count=n(),
+    t_bias=qt(0.95,df=count-1)*rating_sd/sqrt(count),
+    t_left=rating_mean-t_bias,
+    t_right=rating_mean+t_bias 
+    ) 
+
+```
+```{r}
+library(ggplot2)
+pizza_area <- pizza2 %>%
+  group_by(area) %>%
+  summarise(
+    rating_mean=mean(rating),
+    rating_sd=sd(rating),
+    count=n(),
+    t_bias=qt(0.95,df=count-1)*rating_sd/sqrt(count),
+    t_left=rating_mean-t_bias,
+    t_right=rating_mean+t_bias 
+  ) 
+ggplot(
+  pizza_area, 
+  aes(x = rating_mean, y = area, xmin = t_left, xmax = t_right)
+  ) +
+  geom_point(aes(color = area)) +
+  geom_errorbarh(aes(color = area), height=.35)+
+  theme_light()
+
+```
+http://www.sthda.com/english/articles/32-r-graphics-essentials/132-plot-grouped-data-box-plot-bar-plot-and-more/
+
