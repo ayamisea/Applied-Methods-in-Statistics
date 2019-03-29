@@ -79,21 +79,10 @@ predict(model_2b, new_data,interval="predict")
 
 
 3.Construct the 95% t-based confidence intervals for the mean rating for each pizzeria location (area). Plot all of the intervals in a single plot and briefly comment the results. (Hint: you could make use of plot(), lines() and points() OR search online  for some ways to plot confidence intervals.)
-```{r}
-library(broom)
-group_by(pizza2,area) %>%
-  summarise(
-    rating_mean=mean(rating),
-    rating_sd=sd(rating),
-    count=n(),
-    t_bias=qt(0.95,df=count-1)*rating_sd/sqrt(count),
-    t_left=rating_mean-t_bias,
-    t_right=rating_mean+t_bias 
-    ) 
 
-```
 ```{r}
 library(ggplot2)
+library(broom)
 pizza_area <- pizza2 %>%
   group_by(area) %>%
   summarise(
@@ -114,4 +103,8 @@ ggplot(
 
 ```
 http://www.sthda.com/english/articles/32-r-graphics-essentials/132-plot-grouped-data-box-plot-bar-plot-and-more/
+
+```{r}
+pizza_area
+```
 
