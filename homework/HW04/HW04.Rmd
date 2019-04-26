@@ -1,0 +1,109 @@
+---
+title: "HW04"
+author: "Irene Lai"
+date: "2019年4月26日"
+---
+
+#1 waste water
+```{r}
+waste_water <- read.csv("wastewater.csv",head = TRUE)
+f_levels <- colnames(waste_water) # factor levels 
+resp <- c(t(as.matrix(waste_water))) # response data 
+k <- length(f_levels) # number of treatment levels 
+n_i <- nrow(waste_water) # observations per treatment
+n <- k*n_i
+treatment <- gl(k, 1, n, factor(f_levels)) # matching treatments
+
+anova_1 <- aov(resp ~ treatment)
+summary(anova_1) 
+
+F_obs <- summary(anova_1)[[1]][["F value"]][[1]]
+F_table <- qf(1-0.1, k-1, n-k)
+if(F_obs > F_table) print("Reject H0") else print("Accept H0")
+```
+
+#2 fern
+```{r}
+fern <- read.csv("Fern.csv",head = TRUE)
+resp <- fern$Response_area
+treatment <- fern$wave_light # matching treatment 
+block<- fern$Block_age # blocking factor 
+k <- nlevels(treatment) # number of factor levels 
+b <- nlevels(block) # number of block levels
+n <- k*b 
+anova_2 <- aov(resp ~ treatment + block) 
+
+for (i in 1:k) {
+  tmp <- fern[fern[, colnames(fern)[1]] == levels(treatment)[i],colnames(fern)[3]]
+  cat(levels(treatment)[i],tmp,sum(tmp),mean(tmp),"\n")
+  # print factors, sample, total, mean
+}
+
+for (i in 1:b) {
+  tmp <- fern[fern[, colnames(fern)[2]] == levels(block)[i],colnames(fern)[3]]
+  cat(levels(block)[i],tmp,sum(tmp),mean(tmp),"\n")
+  # print blocks, sample, total, mean
+}
+
+grand_total <- sum(resp)
+grand_mean <- grand_total/n
+
+summary(anova_2) 
+F_obs <- summary(anova_2)[[1]][["F value"]][[1]]
+F_table <- qf(1-0.05, k-1, (k-1)*(b-1))
+if(F_obs > F_table) print("Reject H0") else print("Accept H0")
+```
+
+#3 cotinine
+```{r}
+library(dplyr)
+library(ggpubr)
+cotinine <- read.csv("cotinine.csv",header=TRUE)
+resp <- cotinine$cotinine
+factor1 <- cotinine$Race # matching treatment 1
+factor2 <- cotinine$Gender # matching treatment 2
+k1 <- nlevels(factor1) # number of factor1 levels 
+k2 <- nlevels(factor2) # number of factor1 levels 
+
+cot_group <- cotinine %>%
+  group_by(Race,Gender) %>%
+  summarise(Count = n(),Sum=sum(cotinine),Mean=(mean(cotinine)))
+
+r <- cot_group$Count[1]
+n <- k1*k2*r
+cot_group
+
+anova_3 <- aov(resp ~ factor1*factor2) 
+summary(anova_3)
+
+ggboxplot(cotinine, x = "Race", y = "cotinine", color = "Gender",
+          palette = c("red", "blue"))
+
+ggline(cotinine, x = "Race", y = "cotinine", color = "Gender",
+       add = c("mean"),
+       palette = c("red", "blue"))
+
+interaction.plot(cotinine$Race, cotinine$Gender, cotinine$cotinine)
+
+anova_3A <- aov(resp ~ factor1) 
+summary(anova_3A)
+
+anova_3B <- aov(resp ~ factor2) 
+summary(anova_3B)
+
+female <- cotinine %>% filter(Gender=="Female")
+resp <- female$cotinine
+treatment <- female$Race
+anova_female <- aov(resp ~ treatment) 
+summary(anova_female)
+
+male <- cotinine %>% filter(Gender=="Male")
+resp <- male$cotinine
+treatment <- male$Race
+anova_male <- aov(resp ~ treatment) 
+summary(anova_male)
+
+```
+# tutorial
+http://www.sthda.com/english/wiki/two-way-anova-test-in-r
+http://www.r-tutor.com/elementary-statistics/analysis-variance/completely-randomized-design
