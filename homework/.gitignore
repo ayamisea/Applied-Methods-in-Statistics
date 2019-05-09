@@ -1,2 +1,10 @@
-*.pdf
-*.docx
+/HW01/*.pdf
+/HW01/*.docx
+/HW02/*.pdf
+/HW02/*.docx
+/HW03/*.pdf
+/HW03/*.docx
+/HW04/*.pdf
+/HW04/*.docx
+/HW05/*.pdf
+/HW05/*.docx
