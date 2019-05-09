@@ -1,0 +1,157 @@
+---
+title: "HW05"
+author: "Irene Lai"
+date: "2019年5月9日"
+output: html_document
+---
+
+#第一題
+```{r}
+b_male_admit <- 480
+b_male_deny <- 120
+b_female_admit <- 180
+b_female_deny <-20
+l_male_admit <- 10
+l_male_deny <-90
+l_female_admit <- 100
+l_female_deny <- 200
+total_male <- b_male_admit+b_male_deny+l_male_admit+l_male_deny
+total_female <- b_female_admit+b_female_deny+l_female_admit+l_female_deny
+```
+a.
+```{r}
+b_male_admit + l_male_admit
+b_male_deny + l_male_deny 
+b_female_admit + l_female_admit 
+b_female_deny +l_female_deny
+```
+b.
+```{r}
+male_total <- b_male_admit + l_male_admit + b_male_deny + l_male_deny 
+female_total <- b_female_admit + l_female_admit + b_female_deny +l_female_deny
+
+(b_male_admit +l_male_admit )/male_total
+(b_female_admit + l_female_admit)/female_total
+```
+c.
+```{r}
+b_male_total <- b_male_admit + b_male_deny
+b_female_total <-  b_female_admit + b_female_deny
+
+l_male_total  <- l_male_admit + l_male_deny
+l_female_total <- l_female_admit + l_female_deny
+b_male_admit/b_male_total 
+b_female_admit/b_female_total
+l_male_admit/l_male_total 
+l_female_admit/l_female_total
+
+
+```
+d.
+```{r}
+# 申請 Business school 的男生佔總體男生
+(b_male_admit + b_male_deny)/male_total
+# 申請 Business school 的女生佔總體女生
+(b_female_admit + b_female_deny)/female_total
+
+admit_total <- b_male_admit+b_female_admit+l_male_admit+l_female_admit
+
+#錄取Business school的比例佔全部錄取者
+(b_male_admit+b_female_admit)/admit_total
+#錄取Law school的比例佔全部錄取者
+(l_male_admit+l_female_admit)/admit_total
+
+# Business 率取率
+(b_male_admit+b_female_admit)/(b_female_total+b_male_total)
+# Law school 錄取率
+(l_male_admit+l_female_admit)/(l_male_total+l_female_total)
+```
+
+#第二題
+
+a.
+```{r}
+table <- data.frame(
+  female = c(68,91,5,61),
+  male = c(56,40,6,59),
+  row.names = c("Accounting","Administration","Economics","Finance")
+)
+Xsq <- chisq.test(table)
+# p-value = 0.0127 <0.05 -> Reject H0
+qchisq(.95,df=3)
+
+Xsq
+Xsq$observed
+Xsq$expected
+Xsq$residuals
+Xsq$stdres
+Xsq$statistic
+```
+
+c.
+```{r}
+library(dplyr)
+tbl<- mutate(table,female_pct =round(female / sum(female)*100,3), 
+       male_pct = round(male/sum(male)*100,3))
+
+library(plotly)
+Major <- row.names(table)
+Female_pct <- c(tbl$female_pct)
+Male_pct <- c(tbl$male_pct)
+data <- data.frame(Major,Female_pct,Male_pct)
+plot_ly(data,x= ~Major, y= ~Female_pct,text=Female_pct,textposition = 'auto',type = 'bar',name = 'Female') %>%
+  add_trace(y= ~Male_pct,text=Male_pct,textposition = 'auto', name = 'Male') %>%
+  layout(yaxis=list(title='Percent'),barmode ='group')
+```
+
+e.
+```{r}
+(722-386)/722*100
+```
+
+#第三題
+
+a. 
+```{r}
+professor_scorecount <- data.frame(
+  Grade = c("A","B","C","D/F"),
+  Count = c(22,38,20,11)
+)
+professor_scorecount_pct <- mutate(professor_scorecount,grade_pct =round(Count / sum(Count)*100,4))
+professor_scorecount_pct
+```
+```{r}
+grade_distribution <- data.frame(
+  Grade = c("A","B","C","D/F"),
+  Professor_section = professor_scorecount_pct$grade_pct,
+  TA_section = c(32,41,20,7)
+)
+grade_pct<- data.frame(grade_distribution$Grade,grade_distribution$Professor_section,grade_distribution$TA_section)
+plot_ly(grade_pct,x= ~grade_distribution$Grade, y= ~grade_distribution$Professor_section,text=grade_distribution$Professor_section,textposition = 'auto',type = 'bar',name = 'Professor') %>%
+  add_trace(y= ~grade_distribution$TA_section,text=grade_distribution$TA_section,textposition = 'auto', name = 'TA') %>%
+  layout(xaxis=list(title='Grade Distribution'),yaxis=list(title='Percent'),barmode ='group')
+
+```
+
+b. c.
+```{r}
+totalCount <- sum(professor_scorecount$Count)
+exp_count <- data.frame(
+  Grade = grade_distribution$Grade,
+  Count = professor_scorecount$Count,
+  Distribution = c(0.32,0.41,0.2,0.07)
+)
+
+exp_count <- mutate(exp_count,exp_count = sum(Count)*Distribution,chisq = (Count-exp_count)*(Count-exp_count)/exp_count)
+
+exp_count
+chisq_statistic <- sum(exp_count$chisq)
+pchisq(chisq_statistic, df=3, lower.tail=FALSE)
+qchisq(.95,df=3)
+```
+
+
+#tutorial
+https://www.rdocumentation.org/packages/stats/versions/3.6.0/topics/chisq.test
+https://plot.ly/r/bar-charts/
+
