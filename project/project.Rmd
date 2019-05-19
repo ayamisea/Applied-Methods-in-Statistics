@@ -1,0 +1,380 @@
+---
+title: "Project"
+author: "Irene Lai"
+date: "2019年5月17日"
+output: html_document
+---
+
+
+# 資料前處理
+```{r}
+library(dplyr)
+library(tidyr)
+data <- read.csv("data/data_clean.csv",head = TRUE)
+data <- data %>% filter_all(all_vars((.)!=999)) 
+data$X9 <- sub("（.*$", "\\1", data$X9)
+#data <- data %>% separate(X6, c("X6", "X7"), sep="\\(")
+#data$X7 <- sub("小.*$", "\\1", data$X7)
+data$X2 <- data$X2 +201408
+data <- data %>% filter(X2>=201601) 
+data$X2 <- 201600 + (data$X2 %% 100 %/% 12)*100 + (data$X2 %% 100 %% 12)
+data$X2[data$X2 %% 100 == 0] <- data$X2[data$X2 %% 100 == 0]+12 -100
+data$X1 <- NULL
+
+```
+
+```{r}
+d <- data
+unique(data$X12)
+```
+
+```{r}
+
+d$X4 <- as.character(d$X4)
+
+
+d$X4[d$X4=='30~34'] <- "青年" 
+d$X4[d$X4=='25~29'] <- "青年"
+d$X4[d$X4=='20~24'] <- "青年" 
+d$X4[d$X4=='19以下'] <- "青年" 
+
+d$X4[d$X4=='35~39'] <- "中年"
+d$X4[d$X4=='40~44'] <- "中年"
+d$X4[d$X4=='45~49'] <- "中年"
+d$X4[d$X4=='50~54'] <- "中年"
+
+d$X4[d$X4=='55~59'] <- "老年"
+d$X4[d$X4=='60~64'] <- "老年"
+d$X4[d$X4=='65以上'] <- "老年"
+
+unique(d$X12)
+d$X12 <- as.character(d$X12)
+d$X12[d$X12=='稍有惡化'] <- "惡化"
+d$X12[d$X12=='明顯惡化'] <- "惡化"
+d$X12[d$X12=='稍有改善'] <- "改善"
+d$X12[d$X12=='改善很多'] <- "改善"
+```
+
+```{r}
+d<- filter(d, X9 == "台北市" | X9 == "高雄市" |X9 == "新北市"|X9 == "桃園市"|X9 == "台中市"|X9 == "台南市")
+
+#taipei <-filter(d,X9 == "台北市")
+#kaohsiung <-filter(d,X9 == "高雄市")
+#newTaipeiCity <- filter(d,X9 == "新北市")
+#taoyuan <- filter(d,X9 == "桃園市")
+#taichung <-filter(d,X9 == "台中市")
+#tainan <- filter(d,X9 == "台南市")
+
+```
+
+
+# 六都景氣現況樂觀程度分析 2019/03
+```{r}
+data_201903 <- filter(d,X2=='201903')
+data_201903 <- filter(data_201903,X12!='不知道')
+unique(data_201903$X12)
+
+```
+# 性別 
+```{r}
+library(plotly)
+test <- data_201903 %>% group_by('景氣現況樂觀程度'=X12) %>% summarise('男性'=sum(X3=='男'),'女性'=sum(X3=='女'))
+table <- data.frame(
+  '男性' = test$'男性',
+  '女性' = test$'女性',
+  row.names = test$'景氣現況樂觀程度'
+)
+
+# 卡方
+Xsq<-chisq.test(table)
+Xsq
+Xsq$expected
+
+a <- row.names(table)
+b1<-round(c(table$'男性')/sum(table$'男性')*100,3)
+b2 <-round(c(table$'女性')/sum(table$'女性')*100,3)
+
+total <- c(sum(table$'男性'),sum(table$'女性'))
+name <- c(names(table))
+
+plot_ly(x = total, y = name, text=total,textposition = 'auto', type = 'bar', orientation = 'h')
+
+plot_ly(table,x=~a, y= ~b1,text=b1,textposition = 'auto',type = 'bar',name = '男性') %>%
+  add_trace(y= ~b2,text=b2,textposition = 'auto', name = '女性') %>%
+  layout(xaxis=list(title='景氣現況樂觀程度'),yaxis=list(title='性別與景氣現況樂觀程度佔比(%)'),barmode ='group')
+```
+
+# 年齡
+```{r}
+test <- data_201903 %>% group_by('景氣現況樂觀程度'=X12) %>% summarise('青年'=sum(X4=='青年'),'中年'=sum(X4=='中年'),'老年'=sum(X4=='老年'))
+table <- data.frame(
+  '青年' = test$'青年',
+  '中年' = test$'中年',
+  '老年' = test$'老年',
+  row.names = test$'景氣現況樂觀程度'
+)
+
+table
+
+# 卡方
+Xsq<-chisq.test(table)
+Xsq
+Xsq$expected
+
+
+a <- row.names(table)
+b1<-round(c(table$'青年')/sum(table$'青年')*100,3)
+b2 <-round(c(table$'中年')/sum(table$'中年')*100,3)
+b3 <-round(c(table$'老年')/sum(table$'老年')*100,3)
+
+total <- c(sum(table$'青年'),sum(table$'中年'),sum(table$'老年'))
+name <- c(names(table))
+
+plot_ly(x = total, y = name, text=total,textposition = 'auto', type = 'bar', orientation = 'h')
+
+plot_ly(table,x=~a, y= ~b1,text=b1,textposition = 'auto',type = 'bar',name = '青年') %>%
+  add_trace(y= ~b2,text=b2,textposition = 'auto', name = '中年') %>%
+  add_trace(y= ~b3,text=b3,textposition = 'auto', name = '老年') %>%
+  layout(xaxis=list(title='景氣現況樂觀程度'),yaxis=list(title='年齡與景氣現況樂觀程度佔比(%)'),barmode ='group')
+```
+
+# 學歷
+```{r}
+unique(data_201903$X5)
+data_201903$X5 <- as.character(data_201903$X5)
+data_201903$X5[data_201903$X5=='高中'] <- "高中以下" 
+data_201903$X5[data_201903$X5=='國中'] <- "高中以下"
+data_201903$X5[data_201903$X5=='國小以下'] <- "高中以下"
+data_201903$X5[data_201903$X5=='大學'] <- "大學專科"
+data_201903$X5[data_201903$X5=='專科'] <- "大學專科"
+data_201903$X5[data_201903$X5=='碩士'] <- "碩博士"
+data_201903$X5[data_201903$X5=='博士'] <- "碩博士"
+
+#高中以下：高中、國中、國小以下
+#大學專科：大學、專科
+#碩博士：碩士、博士
+
+
+test <- data_201903 %>% group_by('景氣現況樂觀程度'=X12) %>% summarise('高中以下'=sum(X5=='高中以下'),'大學專科'=sum(X5=='大學專科'),'碩博士'=sum(X5=='碩博士'))
+table <- data.frame(
+  '高中以下' = test$'高中以下',
+  '大學專科' = test$'大學專科',
+  '碩博士' = test$'碩博士',
+  row.names = test$'景氣現況樂觀程度'
+)
+
+table
+
+# 卡方
+Xsq<-chisq.test(table)
+Xsq
+Xsq$expected
+
+
+a <- row.names(table)
+b1<-round(c(table$'高中以下')/sum(table$'高中以下')*100,3)
+b2 <-round(c(table$'大學專科')/sum(table$'大學專科')*100,3)
+b3 <-round(c(table$'碩博士')/sum(table$'碩博士')*100,3)
+
+total <- c(sum(table$'高中以下'),sum(table$'大學專科'),sum(table$'碩博士'))
+name <- c(names(table))
+
+plot_ly(x = total, y = name, text=total,textposition = 'auto', type = 'bar', orientation = 'h')
+
+plot_ly(table,x=~a, y= ~b1,text=b1,textposition = 'auto',type = 'bar',name = '高中以下') %>%
+  add_trace(y= ~b2,text=b2,textposition = 'auto', name = '大學專科') %>%
+  add_trace(y= ~b3,text=b3,textposition = 'auto', name = '碩博士') %>%
+  layout(xaxis=list(title='景氣現況樂觀程度'),yaxis=list(title='學歷與景氣現況樂觀程度佔比(%)'),barmode ='group')
+```
+
+
+# 婚姻/小孩
+
+```{r}
+unique(data_201903$X6)
+
+test <- data_201903 %>% group_by('景氣現況樂觀程度'=X12) %>% summarise('已婚(無小孩)'=sum(X6=='已婚(無小孩)'),'單身(無小孩)'=sum(X6=='單身(無小孩)'),'已婚(有小孩)'=sum(X6=='已婚(有小孩)'),'單身(有小孩)'=sum(X6=='單身(有小孩)'))
+table <- data.frame(
+  '已婚無小孩' = test$'已婚(無小孩)',
+  '單身無小孩' = test$'單身(無小孩)',
+  '已婚有小孩' = test$'已婚(有小孩)',
+  '單身有小孩' = test$'單身(有小孩)',
+  row.names = test$'景氣現況樂觀程度'
+)
+
+table
+
+# 卡方
+  Xsq<-chisq.test(table)
+  Xsq
+  Xsq$expected
+
+
+a <- row.names(table)
+b1<-round(c(table$'已婚無小孩')/sum(table$'已婚無小孩')*100,3)
+b2 <-round(c(table$'單身無小孩')/sum(table$'單身無小孩')*100,3)
+b3 <-round(c(table$'已婚有小孩')/sum(table$'已婚有小孩')*100,3)
+b4 <-round(c(table$'單身有小孩')/sum(table$'單身有小孩')*100,3)
+
+total <- c(sum(table$'已婚無小孩'),sum(table$'單身無小孩'),sum(table$'已婚有小孩'),sum(table$'單身有小孩'))
+name <- c(names(table))
+
+plot_ly(x = total, y = name, text=total,textposition = 'auto', type = 'bar', orientation = 'h')
+
+plot_ly(table,x=~a, y= ~b1,text=b1,textposition = 'auto',type = 'bar',name = '已婚無小孩') %>%
+  add_trace(y= ~b2,text=b2,textposition = 'auto', name = '單身無小孩') %>%
+  add_trace(y= ~b3,text=b3,textposition = 'auto', name = '已婚有小孩') %>%
+  add_trace(y= ~b4,text=b4,textposition = 'auto', name = '單身有小孩') %>%
+  layout(xaxis=list(title='景氣現況樂觀程度'),yaxis=list(title='婚姻/小孩與景氣現況樂觀程度佔比(%)'),barmode ='group')
+```
+
+# 職業
+
+```{r}
+unique(data_201903$X8)
+data_filter <- filter(data_201903,X8=='私部門'|X8=='軍公教')
+test <- data_filter %>% group_by('景氣現況樂觀程度'=X12) %>% summarise('私部門'=sum(X8=='私部門'),'公部門'=sum(X8=='軍公教'))
+table <- data.frame(
+  '私部門' = test$'私部門',
+  '公部門' = test$'公部門',
+  row.names = test$'景氣現況樂觀程度'
+)
+
+table
+# 卡方
+Xsq<-chisq.test(table)
+Xsq
+Xsq$expected
+
+a <- row.names(table)
+b1<-round(c(table$'私部門')/sum(table$'私部門')*100,3)
+b2 <-round(c(table$'公部門')/sum(table$'公部門')*100,3)
+
+total <- c(sum(table$'私部門'),sum(table$'公部門'))
+name <- c(names(table))
+
+plot_ly(x = total, y = name, text=total,textposition = 'auto', type = 'bar', orientation = 'h')
+
+plot_ly(table,x=~a, y= ~b1,text=b1,textposition = 'auto',type = 'bar',name = '私部門') %>%
+  add_trace(y= ~b2,text=b2,textposition = 'auto', name = '公部門') %>%
+  layout(xaxis=list(title='景氣現況樂觀程度'),yaxis=list(title='職業與景氣現況樂觀程度佔比(%)'),barmode ='group')
+```
+
+# 地區
+```{r}
+unique(data_201903$X9)
+data_filter<-filter(data_201903, X9 == "台北市" | X9 == "高雄市" |X9 == "新北市"|X9 == "桃園市"|X9 == "台中市"|X9 == "台南市")
+unique(data_filter$X9)
+test <- data_filter %>% group_by('景氣現況樂觀程度'=X12) %>% summarise('台北市'=sum(X9=='台北市'),'新北市'=sum(X9=='新北市'),'桃園市'=sum(X9=='桃園市'),'台中市'=sum(X9=='台中市'),'台南市'=sum(X9=='台南市'),'高雄市'=sum(X9=='高雄市'))
+table <- data.frame(
+  '台北市'= test$'台北市',
+  '新北市' = test$'新北市',
+  '桃園市'= test$'桃園市',
+  '台中市'= test$'台中市',
+  '台南市'= test$'台南市',
+  '高雄市'= test$'高雄市',
+  row.names = test$'景氣現況樂觀程度'
+)
+
+table
+# 卡方
+Xsq<-chisq.test(table)
+Xsq
+Xsq$expected
+
+a <- row.names(table)
+b1<-round(c(table$'台北市')/sum(table$'台北市')*100,3)
+b2 <-round(c(table$'新北市')/sum(table$'新北市')*100,3)
+b3<-round(c(table$'桃園市')/sum(table$'桃園市')*100,3)
+b4 <-round(c(table$'台中市')/sum(table$'台中市')*100,3)
+b5<-round(c(table$'台南市')/sum(table$'台南市')*100,3)
+b6 <-round(c(table$'高雄市')/sum(table$'高雄市')*100,3)
+
+total <- c(sum(table$'台北市'),sum(table$'新北市'),sum(table$'桃園市'),sum(table$'台中市'),sum(table$'台南市'),sum(table$'高雄市'))
+name <- c(names(table))
+
+plot_ly(x = total, y = name, text=total,textposition = 'auto', type = 'bar', orientation = 'h')
+
+plot_ly(table,x=~a, y= ~b1,text=b1,textposition = 'auto',type = 'bar',name = '台北市') %>%
+  add_trace(y= ~b2,text=b2,textposition = 'auto', name = '新北市') %>%
+  add_trace(y= ~b3,text=b3,textposition = 'auto', name = '桃園市') %>%
+  add_trace(y= ~b4,text=b4,textposition = 'auto', name = '台中市') %>%
+  add_trace(y= ~b5,text=b5,textposition = 'auto', name = '台南市') %>%
+  add_trace(y= ~b6,text=b6,textposition = 'auto', name = '高雄市') %>%
+  layout(xaxis=list(title='景氣現況樂觀程度'),yaxis=list(title='地區與景氣現況樂觀程度佔比(%)'),barmode ='group')
+```
+
+# 居住處所
+```{r}
+unique(data_201903$X10)
+test <- data_201903 %>% group_by('景氣現況樂觀程度'=X12) %>% summarise('父母親親屬所有'=sum(X10=='父母親/親屬所有'),'自有或共有'=sum(X10=='自有或共有'),'承租'=sum(X10=='承租'))
+table <- data.frame(
+  '父母親親屬所有' = test$'父母親親屬所有',
+  '自有或共有' = test$'自有或共有',
+  '承租' = test$'承租',
+  row.names = test$'景氣現況樂觀程度'
+)
+
+table
+
+# 卡方
+Xsq<-chisq.test(table)
+Xsq
+Xsq$expected
+
+
+a <- row.names(table)
+b1<-round(c(table$'父母親親屬所有')/sum(table$'父母親親屬所有')*100,3)
+b2 <-round(c(table$'自有或共有')/sum(table$'自有或共有')*100,3)
+b3 <-round(c(table$'承租')/sum(table$'承租')*100,3)
+
+total <- c(sum(table$'父母親親屬所有'),sum(table$'自有或共有'),sum(table$'承租'))
+name <- c(names(table))
+
+plot_ly(x = total, y = name, text=total,textposition = 'auto', type = 'bar', orientation = 'h')
+
+plot_ly(table,x=~a, y= ~b1,text=b1,textposition = 'auto',type = 'bar',name = '父母親親屬所有') %>%
+  add_trace(y= ~b2,text=b2,textposition = 'auto', name = '自有或共有') %>%
+  add_trace(y= ~b3,text=b3,textposition = 'auto', name = '承租') %>%
+  layout(xaxis=list(title='景氣現況樂觀程度'),yaxis=list(title='居住處所與景氣現況樂觀程度佔比(%)'),barmode ='group')
+```
+
+# 投資概況
+```{r}
+unique(data_201903$X11)
+test <- data_201903 %>% group_by('景氣現況樂觀程度'=X12) %>% summarise('僅投資股市'=sum(X11=='僅投資股市'),'完全沒有'=sum(X11=='完全沒有'),'僅投資共同基金'=sum(X11=='僅投資共同基金'),'同時投資股市及共同基金'=sum(X11=='同時投資股市及共同基金'))
+table <- data.frame(
+  '僅投資股市' = test$'僅投資股市',
+  '完全沒有' = test$'完全沒有',
+  '僅投資共同基金' = test$'僅投資共同基金',
+  '同時投資股市及共同基金' = test$'同時投資股市及共同基金',
+  row.names = test$'景氣現況樂觀程度'
+)
+
+table
+
+# 卡方
+Xsq<-chisq.test(table)
+Xsq
+Xsq$expected
+
+
+a <- row.names(table)
+b1<-round(c(table$'僅投資股市')/sum(table$'僅投資股市')*100,3)
+b2 <-round(c(table$'完全沒有')/sum(table$'完全沒有')*100,3)
+b3 <-round(c(table$'僅投資共同基金')/sum(table$'僅投資共同基金')*100,3)
+b4 <-round(c(table$'同時投資股市及共同基金')/sum(table$'同時投資股市及共同基金')*100,3)
+
+total <- c(sum(table$'僅投資股市'),sum(table$'完全沒有'),sum(table$'僅投資共同基金'),sum(table$'同時投資股市及共同基金'))
+name <- c(names(table))
+
+plot_ly(x = total, y = name, text=total,textposition = 'auto', type = 'bar', orientation = 'h')
+
+plot_ly(table,x=~a, y= ~b1,text=b1,textposition = 'auto',type = 'bar',name = '僅投資股市') %>%
+  add_trace(y= ~b2,text=b2,textposition = 'auto', name = '完全沒有') %>%
+  add_trace(y= ~b3,text=b3,textposition = 'auto', name = '僅投資共同基金') %>%
+  add_trace(y= ~b4,text=b4,textposition = 'auto', name = '同時投資股市及共同基金') %>%
+  layout(xaxis=list(title='景氣現況樂觀程度'),yaxis=list(title='投資概況與景氣現況樂觀程度佔比(%)'),barmode ='group')
+
+```
+
